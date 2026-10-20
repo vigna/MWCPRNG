@@ -4,15 +4,15 @@ This repository contains data and code associated with the paper
 “Scrambled Multiply-with-Carry Pseudorandom Number Generators”, by Sebastiano
 Vigna.
 
-The directory `src` contains the code used to sample candidate multipliers and
-to compute their spectral figures of merit.
+The directory `search` contains the code used to sample candidate
+multipliers and to compute their spectral figures of merit.
 
 The directory `python` contains the Python code used to select the
 multipliers reported in the paper.
 
-The directory `c` contains the C code of the generators suggested in the
-paper, which is also available at <https://prng.di.unimi.it/>, and a test
-suite (`c/test/check.sh`) comparing their outputs and jumps with an
+The directory `prngs` contains the C code of the generators suggested in
+the paper, which is also available at <https://prng.di.unimi.it/>, and a
+test suite (`prngs/test/check.sh`) comparing their outputs and jumps with an
 independent Python model.
 
 The databases of candidate multipliers are available at
