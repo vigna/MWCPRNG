@@ -10,6 +10,11 @@ to compute their spectral figures of merit.
 The directory `python` contains the Python code used to select the
 multipliers reported in the paper.
 
+The directory `c` contains the C code of the generators suggested in the
+paper, which is also available at <https://prng.di.unimi.it/>, and a test
+suite (`c/test/check.sh`) comparing their outputs and jumps with an
+independent Python model.
+
 The databases of candidate multipliers are available at
 <https://vigna.di.unimi.it/MWC.tar.zst>. (The size of the zstd file is
 approximately 1.8 gigabytes; the uncompressed data is approximately 7
