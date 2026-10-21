@@ -1,8 +1,8 @@
 # MWCPRNG
 
 This repository contains data and code associated with the paper
-“Scrambled Multiply-with-Carry Pseudorandom Number Generators”, by Sebastiano
-Vigna.
+[“Scrambled Multiply-with-Carry Pseudorandom Number
+Generators”](https://arxiv.org/abs/2610.27313), by Sebastiano Vigna.
 
 The directory `search` contains the code used to sample candidate
 multipliers and to compute their spectral figures of merit.
