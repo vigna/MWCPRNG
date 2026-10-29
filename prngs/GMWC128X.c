@@ -53,7 +53,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
    and scrambles the output with X.
 */
 
-#define GMWC_MINUSA0 0x68935f57
+#define GMWC_MINUSA0 0x68935f57ULL
 #define GMWC_A0INV 0x8316d3ad5de20399
 #define GMWC_A1 0xfff0cfb4ed6366fa
 
