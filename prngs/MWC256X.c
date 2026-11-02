@@ -49,9 +49,10 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
    mean of the figures of merit of the spectral test of the underlying
    generator in dimensions 2 to 8.
 
-   For a generator of the same type with stronger theoretical guarantees,
-   consider GMWC256X, a Goresky-Klapper generalized multiply-with-carry
-   generator whose modulus does not force such a defect.
+   Goresky-Klapper generalized multiply-with-carry (GMWC) generators, such as
+   GMWC256X, have a modulus that does not force such a defect. However, X
+   already hides the defect, and GMWC generators are about four times as slow,
+   so we do not suggest them for general use.
 
    MWC256X 1.0 replaces MWC256 1.0: it has a different MWC_A3 and scrambles
    the output with X.
