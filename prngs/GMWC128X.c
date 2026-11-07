@@ -59,12 +59,19 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
 /* The state must be initialized so that GMWC_MINUSA0 <= c <= GMWC_A1 (a
    sufficient condition: valid states may have carries outside this range).
-   If you have a 64-bit seed, we suggest to set c = 2 * GMWC_MINUSA0 (with
-   c = GMWC_MINUSA0 or c = GMWC_A1 the states obtained from different seeds
-   are arithmetically related), and to seed a SplitMix generator and use
-   its output to fill x: do not use related seeds (e.g., consecutive
-   integers) directly, as they generate correlated sequences. To obtain
-   different streams, you can also use the jump functions. */
+   If you have a 64-bit seed, we suggest to seed a SplitMix generator and
+   use its output to fill x and c. For c, take a random real number u in
+   [0..1) and compute
+   floor(GMWC_MINUSA0 + u * (GMWC_A1 - GMWC_MINUSA0 + 1)), which in
+   fixed-point arithmetic is just
+   c = GMWC_MINUSA0 + (r * (GMWC_A1 - GMWC_MINUSA0 + 1) >> 64), with r a
+   64-bit value read from SplitMix. Do not use related seeds (e.g.,
+   consecutive integers) directly, and do not fix the carry (e.g.,
+   c = 2 * GMWC_MINUSA0): states obtained in this way can be arithmetically
+   related, and then they generate correlated sequences. To obtain different
+   streams, you can also use the jump functions. (The seeding advice above
+   was revised on 7 November 2026: previous versions of this file suggested
+   to fix the carry, setting c = 2 * GMWC_MINUSA0.) */
 uint64_t x, c;
 
 uint64_t next(void) {

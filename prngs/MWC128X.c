@@ -56,10 +56,16 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 #define MWC_A1 0xff6da236274e252e
 
 /* The state must be initialized so that 0 < c < MWC_A1 - 1. If you have a
-   64-bit seed, we suggest to set c = 1, and to seed a SplitMix generator
-   and use its output to fill x: do not use related seeds (e.g.,
-   consecutive integers) directly, as they generate correlated sequences.
-   To obtain different streams, you can also use the jump functions. */
+   64-bit seed, we suggest to seed a SplitMix generator and use its output
+   to fill x and c. For c, take a random real number u in [0..1) and compute
+   floor(1 + u * (MWC_A1 - 2)), which in fixed-point arithmetic is just
+   c = 1 + (r * (MWC_A1 - 2) >> 64), with r a 64-bit value read from
+   SplitMix. Do not use related seeds (e.g., consecutive integers) directly,
+   and do not fix the carry (e.g., c = 1): states obtained in this way can
+   be arithmetically related, and then they generate correlated sequences.
+   To obtain different streams, you can also use the jump functions. (The
+   seeding advice above was revised on 7 November 2026: previous versions of
+   this file suggested to fix the carry, setting c = 1.) */
 uint64_t x, c;
 
 uint64_t next(void) {

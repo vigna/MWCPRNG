@@ -29,9 +29,12 @@ jumps ahead by an arbitrary number of steps. The jump functions use the
 minimal multiprecision library `mp.c`, except for those of `MWC64X_32.c`,
 whose modulus fits in 64 bits, which use 128-bit arithmetic instead.
 
-To seed a generator, set the carry to one (for GMWC generators, to
-2*e*, where *e* = −*a*₀ = `GMWC_MINUSA0`) and fill the other words with the
-output of a SplitMix generator.
+To seed a generator, fill the whole state, carry included, with the output
+of a SplitMix generator, mapping the carry into the allowed range by
+fixed-point multiplication (see the comments in the code). Do not fix the
+carry: states with the same carry can be arithmetically related, and then
+they generate correlated sequences. To obtain many streams from
+`MWC64X_32.c`, whose period is approximately 2⁶³, use the jump functions.
 
 `test/check.sh` compiles `test/test.c` with each generator at `-O0` and
 `-O3`, checks that `jump_ce(1, 16)` is equivalent to 2¹⁶ calls to `next()` and
