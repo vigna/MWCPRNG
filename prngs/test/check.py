@@ -2,7 +2,8 @@
 """Independent model of the (G)MWC generators with the scrambler X: checks that
 the moduli are safe primes, and that the outputs and the results of jump(),
 long_jump(), jump_ce(), and jump_n() printed by test.c are correct (usage:
-check.py DIR, where DIR contains the outputs of check.sh)."""
+check.py DIR [NAME...], where DIR contains the outputs of check.sh, and the
+optional NAMEs restrict the check to the given generators)."""
 import sys, random
 
 
@@ -32,7 +33,8 @@ GENS = {  # name: (digit bits, lag, multiplier, e or None, jump and long-jump ex
     "MWC128X_32": (32, 3, 0xffcccc66, None, 64, 96),
 }
 allok = True
-for name, (w, k, a, e, je, le) in GENS.items():
+for name in sys.argv[2:] or GENS:
+    w, k, a, e, je, le = GENS[name]
     b = 1 << w; M = b - 1
     m = a * b**k - 1 if e is None else a * b**k + e
     A = pow(b, -1, m)                     # per-step multiplier of the associated MCG

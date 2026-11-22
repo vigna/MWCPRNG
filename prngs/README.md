@@ -2,8 +2,10 @@ Code of the Suggested Generators
 ================================
 
 The code in this directory implements the generators suggested in the
-paper, which are also available at <https://prng.di.unimi.it/>. It needs a C
-compiler supporting 128-bit integers (`__uint128_t`).
+paper, which are also available at <https://prng.di.unimi.it/>. The
+generators with 32-bit digits need only 64-bit arithmetic; the others use
+128-bit integers (`__uint128_t`), which `mul_add.h` replaces in the step
+(see below).
 
 All generators are scrambled by X: each step computes
 *t* = *a* *x*ₙ₋ₖ + *c*ₙ₋₁ (for GMWC generators, *a* = *a*₁), from which the new
@@ -27,7 +29,14 @@ Besides `jump()` and `long_jump()`, every generator provides `jump_ce(c, e)`,
 which is equivalent to *c* · 2ᵉ calls to `next()`, and `jump_n()`, which
 jumps ahead by an arbitrary number of steps. The jump functions use the
 minimal multiprecision library `mp.c`, except for those of `MWC64X_32.c`,
-whose modulus fits in 64 bits, which use 128-bit arithmetic instead.
+whose modulus fits in 64 bits, which use 64-bit modular arithmetic instead.
+
+The step of the generators with 64-bit digits computes the 128-bit result
+of *a* *x* + *c* using `__uint128_t`, which some compilers do not provide
+(e.g., MSVC, or nvcc in device code before CUDA 11.5). `mul_add.h` computes
+it with the fastest method available on each platform (see the comments in
+the code): a schoolbook multiplication on 32-bit halves would be several
+times slower.
 
 To seed a generator, fill the whole state, carry included, with the output
 of a SplitMix generator, mapping the carry into the allowed range by
@@ -41,4 +50,7 @@ they generate correlated sequences. To obtain many streams from
 that `jump()` and `long_jump()` are equivalent to the corresponding calls to
 `jump_ce()`, and compares the outputs and the results of all jump functions
 with an independent Python model (`test/check.py`), which also checks that
-the modulus *m* and (*m* − 1) / 2 are prime.
+the modulus *m* and (*m* − 1) / 2 are prime. It also tests `mul_add.h`
+with each implementation available on the host (`test/mul_add.c`);
+`test/mul_add.cu` tests it on CUDA devices. The GitHub workflow runs the
+tests on Linux, on macOS, on 32-bit x86, and with MSVC on x64 and ARM64.

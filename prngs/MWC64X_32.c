@@ -72,15 +72,23 @@ uint32_t next(void) {
 
 
 /* The modulus m = MWC_A1 * 2^32 - 1 fits in 64 bits, so the following jump
-   functions need only 128-bit arithmetic. They read the state as the
+   functions need only 64-bit modular arithmetic. They read the state as the
    integer x + c * b, where b = 2^32: since each call to next() multiplies
    it modulo m by A = b^-1 mod m = MWC_A1 (as MWC_A1 * b = m + 1), jumping
    ahead by n steps multiplies it by A^n mod m. */
 
 static const uint64_t mod = ((uint64_t)MWC_A1 << 32) - 1;
 
-static uint64_t mulmod(const uint64_t a, const uint64_t b) {
-	return (__uint128_t)a * b % mod;
+// a + b mod m, for a, b < m, without overflow
+static uint64_t addmod(const uint64_t a, const uint64_t b) {
+	return a >= mod - b ? a - (mod - b) : a + b;
+}
+
+// a * b mod m, for a, b < m, by shift-and-add, which needs no 128-bit product
+static uint64_t mulmod(uint64_t a, uint64_t b) {
+	uint64_t r = 0;
+	for (; b != 0; b >>= 1, a = addmod(a, a)) if (b & 1) r = addmod(r, a);
+	return r;
 }
 
 static void jumpmul(const uint64_t r) {

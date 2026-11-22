@@ -1,0 +1,93 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # The whole test suite with GCC (Linux, x86-64) and Clang (macOS, ARM64)
+  unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test suite
+        run: bash prngs/test/check.sh
+
+  # mul_add.h and the generators with 32-bit digits on a target without
+  # 128-bit integers (32-bit x86)
+  x86-32:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prngs
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install 32-bit libraries
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib
+      - name: mul_add.h
+        run: |
+          gcc -m32 -O2 -std=c99 -Wall -Wextra -pedantic -Werror -I. test/mul_add.c -o mul_add
+          ./mul_add
+      - name: Generators with 32-bit digits
+        run: |
+          set -e
+          mkdir -p out
+          F="-m32 -O2 -std=c99 -Wall -Wextra -Wno-unused-function -I."
+          gcc $F -DGENFILE='"MWC64X_32.c"' -DK=1 -DJE=32 -DLE=48 -DW=32 test/test.c -o t1
+          ./t1 > out/MWC64X_32.out
+          gcc $F -DGENFILE='"MWC128X_32.c"' -DK=3 -DJE=64 -DLE=96 -DW=32 test/test.c -o t2
+          ./t2 > out/MWC128X_32.out
+          tail -n 3 out/*.out
+          if grep -q FAIL out/*.out; then exit 1; fi
+          python3 test/check.py out MWC64X_32 MWC128X_32
+
+  # mul_add.h (with _umul128() on x64 and __umulh() on ARM64) and the
+  # generators with 32-bit digits with Microsoft's compiler
+  msvc:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+          - os: windows-11-arm
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: prngs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+      - name: mul_add.h
+        run: |
+          set -e
+          cl 2>&1 | head -n 1
+          for d in "" -DMUL_ADD_PORTABLE; do
+            cl -nologo -O2 -W4 -WX -std:c11 $d -I. test/mul_add.c -Fe:mul_add_c.exe
+            ./mul_add_c.exe
+            cl -nologo -O2 -W4 -WX -TP -EHsc $d -I. test/mul_add.c -Fe:mul_add_cpp.exe
+            ./mul_add_cpp.exe
+          done
+      - name: Generators with 32-bit digits
+        run: |
+          set -e
+          mkdir -p out
+          cl -nologo -O2 -W3 -std:c11 -I. '-DGENFILE="MWC64X_32.c"' -DK=1 -DJE=32 -DLE=48 -DW=32 test/test.c -Fe:t1.exe
+          ./t1.exe > out/MWC64X_32.out
+          cl -nologo -O2 -W3 -std:c11 -I. '-DGENFILE="MWC128X_32.c"' -DK=3 -DJE=64 -DLE=96 -DW=32 test/test.c -Fe:t2.exe
+          ./t2.exe > out/MWC128X_32.out
+          tail -n 3 out/*.out
+          if grep -q FAIL out/*.out; then exit 1; fi
+          python test/check.py out MWC64X_32 MWC128X_32

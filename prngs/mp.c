@@ -19,7 +19,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
 This is a minimal, ludicrously inefficient library to perform modular
 arithmetic on multiple-precision natural numbers represented by an
-array of MP_SIZE uint64_t integers using 128-bit arithmetic.
+array of MP_SIZE uint64_t integers using only 64-bit arithmetic.
 
 The only purpose of this code is to make the jump code of (G)MWC
 generators self-contained. Using any proper multiprecision library
@@ -46,9 +46,9 @@ static int mp_cmp(const uint64_t * const a, const uint64_t * const b) {
 static void _mp_sub(uint64_t * const a, const uint64_t * const b) {
 	int borrow = 0;
 	for(int i = 0; i < MP_SIZE; i++) {
-		__int128_t d = (__int128_t)a[i] - (__int128_t)b[i] - (__int128_t)borrow;
-		borrow = d < 0;
-		a[i] = ((__int128_t)UINT64_MAX + 1) + d;
+		const uint64_t d = a[i] - b[i] - borrow;
+		borrow = a[i] < b[i] || (borrow && a[i] == b[i]);
+		a[i] = d;
 	}
 }
 
@@ -62,8 +62,8 @@ static void mp_rem(uint64_t * const a, const uint64_t * const m) {
 static void mp_add(uint64_t * const a, const uint64_t * const b, const uint64_t * const m) {
 	int carry = 0;
 	for(int i = 0; i < MP_SIZE; i++) {
-		__uint128_t s = (__uint128_t)a[i] + (__uint128_t)b[i] + (__uint128_t)carry;
-		carry = s > UINT64_MAX;
+		const uint64_t s = a[i] + b[i] + carry;
+		carry = s < a[i] || (carry && s == a[i]);
 		a[i] = s;
 	}
 	if (m) mp_rem(a, m);
@@ -80,7 +80,7 @@ static void mp_sub(uint64_t * const a, const uint64_t * const b, const uint64_t 
 }
 
 static void mp_mul(uint64_t * const a, const uint64_t * const b, const uint64_t * const m) {
-	uint64_t r[MP_SIZE] = {}, t[MP_SIZE];
+	uint64_t r[MP_SIZE] = { 0 }, t[MP_SIZE];
 	memcpy(t, a, sizeof t);
 
 	int d;
