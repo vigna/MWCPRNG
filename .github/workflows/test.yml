@@ -5,6 +5,17 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  # name, lag, jump and long-jump exponents, and extra flags for test/test.c
+  GENERATORS: >-
+    MWC128X:1:64:96:
+    MWC192X:2:96:144:
+    MWC256X:3:128:192:
+    GMWC128X:1:64:96:-DGMWC
+    GMWC256X:3:128:192:-DGMWC
+    MWC64X_32:1:32:48:-DW=32
+    MWC128X_32:3:64:96:-DW=32
+
 jobs:
   # The whole test suite with GCC (Linux, x86-64) and Clang (macOS, ARM64)
   unix:
@@ -18,8 +29,8 @@ jobs:
       - name: Test suite
         run: bash prngs/test/check.sh
 
-  # mul_add.h and the generators with 32-bit digits on a target without
-  # 128-bit integers (32-bit x86)
+  # mul_add.h and all generators on a target without 128-bit integers
+  # (32-bit x86), where mul_add() uses the schoolbook multiplication
   x86-32:
     runs-on: ubuntu-latest
     defaults:
@@ -33,21 +44,21 @@ jobs:
         run: |
           gcc -m32 -O2 -std=c99 -Wall -Wextra -pedantic -Werror -I. test/mul_add.c -o mul_add
           ./mul_add
-      - name: Generators with 32-bit digits
+      - name: Generators
         run: |
           set -e
           mkdir -p out
-          F="-m32 -O2 -std=c99 -Wall -Wextra -Wno-unused-function -I."
-          gcc $F -DGENFILE='"MWC64X_32.c"' -DK=1 -DJE=32 -DLE=48 -DW=32 test/test.c -o t1
-          ./t1 > out/MWC64X_32.out
-          gcc $F -DGENFILE='"MWC128X_32.c"' -DK=3 -DJE=64 -DLE=96 -DW=32 test/test.c -o t2
-          ./t2 > out/MWC128X_32.out
-          tail -n 3 out/*.out
+          for g in $GENERATORS; do
+            IFS=: read -r name k je le extra <<< "$g"
+            gcc -m32 -O2 -std=c99 -Wall -Wextra -Wno-unused-function -Werror -I. -DGENFILE="\"$name.c\"" -DK=$k -DJE=$je -DLE=$le $extra test/test.c -o t
+            ./t > out/$name.out
+            tail -n 3 out/$name.out | sed "s/^/$name: /"
+          done
           if grep -q FAIL out/*.out; then exit 1; fi
-          python3 test/check.py out MWC64X_32 MWC128X_32
+          python3 test/check.py out
 
-  # mul_add.h (with _umul128() on x64 and __umulh() on ARM64) and the
-  # generators with 32-bit digits with Microsoft's compiler
+  # mul_add.h and all generators with Microsoft's compiler, where mul_add()
+  # uses _umul128() on x64 and __umulh() on ARM64
   msvc:
     strategy:
       fail-fast: false
@@ -80,14 +91,15 @@ jobs:
             cl -nologo -O2 -W4 -WX -TP -EHsc $d -I. test/mul_add.c -Fe:mul_add_cpp.exe
             ./mul_add_cpp.exe
           done
-      - name: Generators with 32-bit digits
+      - name: Generators
         run: |
           set -e
           mkdir -p out
-          cl -nologo -O2 -W3 -WX -std:c11 -I. '-DGENFILE="MWC64X_32.c"' -DK=1 -DJE=32 -DLE=48 -DW=32 test/test.c -Fe:t1.exe
-          ./t1.exe > out/MWC64X_32.out
-          cl -nologo -O2 -W3 -WX -std:c11 -I. '-DGENFILE="MWC128X_32.c"' -DK=3 -DJE=64 -DLE=96 -DW=32 test/test.c -Fe:t2.exe
-          ./t2.exe > out/MWC128X_32.out
-          tail -n 3 out/*.out
+          for g in $GENERATORS; do
+            IFS=: read -r name k je le extra <<< "$g"
+            cl -nologo -O2 -W3 -WX -std:c11 -I. "-DGENFILE=\"$name.c\"" -DK=$k -DJE=$je -DLE=$le $extra test/test.c -Fe:t.exe
+            ./t.exe > out/$name.out
+            tail -n 3 out/$name.out | sed "s/^/$name: /"
+          done
           if grep -q FAIL out/*.out; then exit 1; fi
-          python test/check.py out MWC64X_32 MWC128X_32
+          python test/check.py out

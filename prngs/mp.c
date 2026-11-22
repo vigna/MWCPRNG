@@ -44,11 +44,13 @@ static int mp_cmp(const uint64_t * const a, const uint64_t * const b) {
 
 // Assumes a >= b
 static void _mp_sub(uint64_t * const a, const uint64_t * const b) {
-	int borrow = 0;
+	uint64_t borrow = 0;
 	for(int i = 0; i < MP_SIZE; i++) {
-		const uint64_t d = a[i] - b[i] - borrow;
-		borrow = a[i] < b[i] || (borrow && a[i] == b[i]);
-		a[i] = d;
+		// Branchless: compilers turn this into subtractions with borrow
+		const uint64_t d = a[i] - b[i];
+		const uint64_t borrow1 = a[i] < b[i];
+		a[i] = d - borrow;
+		borrow = borrow1 | (d < borrow);
 	}
 }
 
@@ -60,11 +62,13 @@ static void mp_rem(uint64_t * const a, const uint64_t * const m) {
 }
 
 static void mp_add(uint64_t * const a, const uint64_t * const b, const uint64_t * const m) {
-	int carry = 0;
+	uint64_t carry = 0;
 	for(int i = 0; i < MP_SIZE; i++) {
-		const uint64_t s = a[i] + b[i] + carry;
-		carry = s < a[i] || (carry && s == a[i]);
-		a[i] = s;
+		// Branchless: compilers turn this into additions with carry
+		const uint64_t s = a[i] + b[i];
+		const uint64_t carry1 = s < a[i];
+		a[i] = s + carry;
+		carry = carry1 | (a[i] < carry);
 	}
 	if (m) mp_rem(a, m);
 }

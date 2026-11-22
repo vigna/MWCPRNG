@@ -17,6 +17,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
 #include <stdint.h>
 #include <string.h>
+#include "mul_add.h"
 
 /* This is MWC192X 1.0, a Marsaglia multiply-with-carry generator with period
    approximately 2^191 whose output is scrambled by X: the result is the most
@@ -72,10 +73,9 @@ uint64_t x, y, c;
 
 uint64_t next(void) {
 	const uint64_t result = y ^ c;
-	const __uint128_t t = MWC_A2 * (__uint128_t)x + c;
+	const uint64_t t = mul_add(MWC_A2, x, c, &c);
 	x = y;
 	y = t;
-	c = t >> 64;
 	return result;
 }
 

@@ -17,6 +17,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
 #include <stdint.h>
 #include <string.h>
+#include "mul_add.h"
 
 /* This is MWC128X 1.0, a Marsaglia multiply-with-carry generator with period
    approximately 2^127 whose output is scrambled by X: the result is the digit
@@ -70,9 +71,7 @@ uint64_t x, c;
 
 uint64_t next(void) {
 	const uint64_t result = x ^ c;
-	const __uint128_t t = MWC_A1 * (__uint128_t)x + c;
-	x = t;
-	c = t >> 64;
+	x = mul_add(MWC_A1, x, c, &c);
 	return result;
 }
 

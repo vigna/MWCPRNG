@@ -18,8 +18,8 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 /*
 
 The step of the generators with 64-bit digits computes a * x + c, where a,
-x, and c are 64-bit words, and needs all 128 bits of the result. The code
-in this directory computes it using the type __uint128_t, which is not part
+x, and c are 64-bit words, and needs all 128 bits of the result. The
+natural way of computing it in C is the type __uint128_t, which is not part
 of ISO C: GCC and Clang provide it on 64-bit targets, but, for example,
 MSVC does not, and nvcc supports 128-bit integers in device code only
 from CUDA 11.5 on.
@@ -42,12 +42,10 @@ returning the lower 64 bits of a * x + c and storing the upper 64 bits in
 - _umul128() with MSVC on x64 and __umulh() with MSVC on ARM64;
 - schoolbook multiplication on 32-bit halves.
 
-For example, the step of MWC128X becomes
+For example, the step of MWC128X is
 
 	const uint64_t result = x ^ c;
-	uint64_t hi;
-	x = mul_add(MWC_A1, x, c, &hi);
-	c = hi;
+	x = mul_add(MWC_A1, x, c, &c);
 	return result;
 
 Defining MUL_ADD_NO_INT128 excludes 128-bit integer types, and defining

@@ -17,6 +17,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
 #include <stdint.h>
 #include <string.h>
+#include "mul_add.h"
 
 /* This is GMWC256X 1.0, a Goresky-Klapper generalized multiply-with-carry
    generator (see their paper "Efficient Multiply-with-Carry Random Number
@@ -77,12 +78,16 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 uint64_t x, y, z, c;
 
 uint64_t next(void) {
-	const __uint128_t t = GMWC_A3 * (__uint128_t)x + c;
+	uint64_t t1, h;
+	const uint64_t t0 = mul_add(GMWC_A3, x, c, &t1); // t = t0 + t1 * b
 	x = y;
 	y = z;
-	z = GMWC_A0INV * (uint64_t)t;
-	c = (t + GMWC_MINUSA0 * (__uint128_t)z) >> 64;
-	return z ^ (uint64_t)(t >> 64);
+	z = GMWC_A0INV * t0;
+	// c = (t + GMWC_MINUSA0 * z) / b, an exact division: as GMWC_MINUSA0 * z
+	// = -t0 mod b, the sum of the lower words carries if and only if t0 != 0
+	mul_add(GMWC_MINUSA0, z, 0, &h);
+	c = t1 + h + (t0 != 0);
+	return z ^ t1;
 }
 
 

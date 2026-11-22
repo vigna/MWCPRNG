@@ -17,6 +17,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
 #include <stdint.h>
 #include <string.h>
+#include "mul_add.h"
 
 /* This is GMWC128X 1.0, a Goresky-Klapper generalized multiply-with-carry
    generator (see their paper "Efficient Multiply-with-Carry Random Number
@@ -75,10 +76,14 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 uint64_t x, c;
 
 uint64_t next(void) {
-	const __uint128_t t = GMWC_A1 * (__uint128_t)x + c;
-	x = GMWC_A0INV * (uint64_t)t;
-	c = (t + GMWC_MINUSA0 * (__uint128_t)x) >> 64;
-	return x ^ (uint64_t)(t >> 64);
+	uint64_t t1, h;
+	const uint64_t t0 = mul_add(GMWC_A1, x, c, &t1); // t = t0 + t1 * b
+	x = GMWC_A0INV * t0;
+	// c = (t + GMWC_MINUSA0 * x) / b, an exact division: as GMWC_MINUSA0 * x
+	// = -t0 mod b, the sum of the lower words carries if and only if t0 != 0
+	mul_add(GMWC_MINUSA0, x, 0, &h);
+	c = t1 + h + (t0 != 0);
+	return x ^ t1;
 }
 
 
@@ -94,7 +99,17 @@ uint64_t next(void) {
 #include "mp.c"
 
 static uint64_t mod[MP_SIZE] = { GMWC_MINUSA0, GMWC_A1 };
-static __uint128_t mod128 = ((__uint128_t)GMWC_A1 << 64) + GMWC_MINUSA0;
+
+// Multiplies the state integer h by r modulo m
+static void jumpmul(const uint64_t * const r) {
+	uint64_t state[MP_SIZE] = { 0, c }, xx[MP_SIZE] = { 0 }, h;
+	xx[0] = mul_add(GMWC_MINUSA0, x, 0, &xx[1]);
+	mp_sub(state, xx, mod); // h = c * b - GMWC_MINUSA0 * x mod m
+	mp_mul(state, r, mod);
+	x = GMWC_A0INV * state[0];
+	mul_add(GMWC_MINUSA0, x, state[0], &h);
+	c = state[1] + h; // (h + GMWC_MINUSA0 * x) / b
+}
 
 
 /* This is the jump function for the generator. It is equivalent
@@ -113,13 +128,7 @@ static __uint128_t mod128 = ((__uint128_t)GMWC_A1 << 64) + GMWC_MINUSA0;
 
 void jump(void) {
 	static uint64_t jump[MP_SIZE] = { 0x3d3454cf128d6951, 0x60e680f9fb32a4e5 };
-	const __uint128_t cc = (__uint128_t)c << 64;
-	const __uint128_t xx = GMWC_MINUSA0 * (__uint128_t)x;
-	const __uint128_t s = cc >= xx ? cc - xx : (mod128 - xx) + cc;
-	uint64_t state[MP_SIZE] = { (uint64_t)s, (uint64_t)(s >> 64) };
-	mp_mul(state, jump, mod);
-	x = GMWC_A0INV * state[0];
-	c = ((((__uint128_t)state[1] << 64) + state[0]) + GMWC_MINUSA0 * (__uint128_t)x) >> 64;
+	jumpmul(jump);
 }
 
 
@@ -140,13 +149,7 @@ void jump(void) {
 
 void long_jump(void) {
 	static uint64_t long_jump[MP_SIZE] = { 0x3d469e7c688d3f2f, 0xefbb70ae908b3b0e };
-	const __uint128_t cc = (__uint128_t)c << 64;
-	const __uint128_t xx = GMWC_MINUSA0 * (__uint128_t)x;
-	const __uint128_t s = cc >= xx ? cc - xx : (mod128 - xx) + cc;
-	uint64_t state[MP_SIZE] = { (uint64_t)s, (uint64_t)(s >> 64) };
-	mp_mul(state, long_jump, mod);
-	x = GMWC_A0INV * state[0];
-	c = ((((__uint128_t)state[1] << 64) + state[0]) + (__uint128_t)GMWC_MINUSA0 * x) >> 64;
+	jumpmul(long_jump);
 }
 
 
@@ -154,16 +157,6 @@ void long_jump(void) {
    exponentiation. Since m has no special form, A is given explicitly. */
 
 static uint64_t base[MP_SIZE] = { 0x02da9505fade3656, 0x830f0c9c3dd132cf };   // A = b^-1 mod m
-
-static void jumpmul(const uint64_t * const r) {
-	const __uint128_t cc = (__uint128_t)c << 64;
-	const __uint128_t xx = GMWC_MINUSA0 * (__uint128_t)x;
-	const __uint128_t s = cc >= xx ? cc - xx : (mod128 - xx) + cc;
-	uint64_t state[MP_SIZE] = { (uint64_t)s, (uint64_t)(s >> 64) };
-	mp_mul(state, r, mod);
-	x = GMWC_A0INV * state[0];
-	c = ((((__uint128_t)state[1] << 64) + state[0]) + GMWC_MINUSA0 * (__uint128_t)x) >> 64;
-}
 
 /* This is the arbitrary-jump function for the generator expressed as c * 2^e.
    It is equivalent to c * 2^e calls to next(); for example, jump_ce(1, 64) is
