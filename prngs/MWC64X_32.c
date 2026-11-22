@@ -65,8 +65,8 @@ uint32_t x, c;
 uint32_t next(void) {
 	const uint32_t result = x ^ c;
 	const uint64_t t = MWC_A1 * (uint64_t)x + c;
-	x = t;
-	c = t >> 32;
+	x = (uint32_t)t;
+	c = (uint32_t)(t >> 32);
 	return result;
 }
 
@@ -93,8 +93,8 @@ static uint64_t mulmod(uint64_t a, uint64_t b) {
 
 static void jumpmul(const uint64_t r) {
 	const uint64_t s = mulmod((uint64_t)c << 32 | x, r);
-	x = s;
-	c = s >> 32;
+	x = (uint32_t)s;
+	c = (uint32_t)(s >> 32);
 }
 
 

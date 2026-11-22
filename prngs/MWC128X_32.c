@@ -63,8 +63,8 @@ uint32_t next(void) {
 	const uint64_t t = MWC_A3 * (uint64_t)x + c;
 	x = y;
 	y = z;
-	z = t;
-	c = t >> 32;
+	z = (uint32_t)t;
+	c = (uint32_t)(t >> 32);
 	return result;
 }
 
@@ -84,10 +84,10 @@ static uint64_t mod[MP_SIZE] = { 0xffffffffffffffff, (uint64_t)(MWC_A3 - 1) << 3
 static void jumpmul(const uint64_t * const r) {
 	uint64_t state[MP_SIZE] = { (uint64_t)y << 32 | x, (uint64_t)c << 32 | z };
 	mp_mul(state, r, mod);
-	x = state[0];
-	y = state[0] >> 32;
-	z = state[1];
-	c = state[1] >> 32;
+	x = (uint32_t)state[0];
+	y = (uint32_t)(state[0] >> 32);
+	z = (uint32_t)state[1];
+	c = (uint32_t)(state[1] >> 32);
 }
 
 

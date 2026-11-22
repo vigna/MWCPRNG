@@ -84,9 +84,9 @@ jobs:
         run: |
           set -e
           mkdir -p out
-          cl -nologo -O2 -W3 -std:c11 -I. '-DGENFILE="MWC64X_32.c"' -DK=1 -DJE=32 -DLE=48 -DW=32 test/test.c -Fe:t1.exe
+          cl -nologo -O2 -W3 -WX -std:c11 -I. '-DGENFILE="MWC64X_32.c"' -DK=1 -DJE=32 -DLE=48 -DW=32 test/test.c -Fe:t1.exe
           ./t1.exe > out/MWC64X_32.out
-          cl -nologo -O2 -W3 -std:c11 -I. '-DGENFILE="MWC128X_32.c"' -DK=3 -DJE=64 -DLE=96 -DW=32 test/test.c -Fe:t2.exe
+          cl -nologo -O2 -W3 -WX -std:c11 -I. '-DGENFILE="MWC128X_32.c"' -DK=3 -DJE=64 -DLE=96 -DW=32 test/test.c -Fe:t2.exe
           ./t2.exe > out/MWC128X_32.out
           tail -n 3 out/*.out
           if grep -q FAIL out/*.out; then exit 1; fi
