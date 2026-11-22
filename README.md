@@ -13,7 +13,10 @@ multipliers reported in the paper.
 The directory `prngs` contains the C code of the generators suggested in
 the paper, which is also available at <https://prng.di.unimi.it/>, and a
 test suite (`prngs/test/check.sh`) comparing their outputs and jumps with an
-independent Python model.
+independent Python model. The branch
+[`portable`](https://github.com/vigna/MWCPRNG/tree/portable) contains a
+version of the code that needs no 128-bit integer type, and thus compiles
+everywhere (e.g., with MSVC, or on 32-bit platforms).
 
 The databases of candidate multipliers are available at
 <https://vigna.di.unimi.it/MWC.tar.zst>. (The size of the zstd file is

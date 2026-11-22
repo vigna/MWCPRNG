@@ -6,6 +6,14 @@ paper, which are also available at <https://prng.di.unimi.it/>. It is
 written in C99 and needs no 128-bit integer type, so it compiles
 everywhere (e.g., with MSVC, or on 32-bit platforms).
 
+The branch [`portable`](https://github.com/vigna/MWCPRNG/tree/portable)
+contains a version of the code that needs no 128-bit integer type, and thus
+compiles everywhere (e.g., with MSVC, or on 32-bit platforms): 128-bit
+products are computed by the function `mul_add()` of `mul_add.h`, which
+uses 128-bit integers or compiler intrinsics where available (also in CUDA
+device code). Its test suite runs on GitHub Actions on Linux, macOS, 32-bit
+x86, and with MSVC on x64 and ARM64.
+
 All generators are scrambled by X: each step computes
 *t* = *a* *x*ₙ₋ₖ + *c*ₙ₋₁ (for GMWC generators, *a* = *a*₁), from which the new
 digit *x*ₙ and the new carry *c*ₙ are derived, and X returns
