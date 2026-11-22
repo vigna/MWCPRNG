@@ -2,17 +2,15 @@ Code of the Suggested Generators
 ================================
 
 The code in this directory implements the generators suggested in the
-paper, which are also available at <https://prng.di.unimi.it/>. It is
-written in C99 and needs no 128-bit integer type, so it compiles
-everywhere (e.g., with MSVC, or on 32-bit platforms).
+paper, which are also available at <https://prng.di.unimi.it/>.
 
-The branch [`portable`](https://github.com/vigna/MWCPRNG/tree/portable)
-contains a version of the code that needs no 128-bit integer type, and thus
+This is the branch `portable`: unlike the code of the branch
+[`main`](https://github.com/vigna/MWCPRNG/tree/main), which needs a C
+compiler supporting 128-bit integers (`__uint128_t`), the code of this
+branch is written in C99 and needs no 128-bit integer type, and thus
 compiles everywhere (e.g., with MSVC, or on 32-bit platforms): 128-bit
-products are computed by the function `mul_add()` of `mul_add.h`, which
-uses 128-bit integers or compiler intrinsics where available (also in CUDA
-device code). Its test suite runs on GitHub Actions on Linux, macOS, 32-bit
-x86, and with MSVC on x64 and ARM64.
+products are computed by the function `mul_add()` of `mul_add.h` (see
+below).
 
 All generators are scrambled by X: each step computes
 *t* = *a* *x*ₙ₋ₖ + *c*ₙ₋₁ (for GMWC generators, *a* = *a*₁), from which the new
